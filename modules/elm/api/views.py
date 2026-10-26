@@ -8,7 +8,7 @@ from fusion_auth.permissions import HasModuleGrant, HasPermission
 from modules.elm.api.serializers import (
     ApplyInputSerializer, BalanceInputSerializer, CalendarInputSerializer,
     DecisionInputSerializer, LeaveApplicationSerializer, LeaveBalanceSerializer,
-    RouteInputSerializer,
+    LeaveTypeSerializer, RouteInputSerializer,
 )
 from modules.elm.domain.leave import Category, LeaveRuleError
 from modules.elm.selectors.leave import applications_for, balances_for, review_queue_for
@@ -24,7 +24,7 @@ def _rule_error(exc: LeaveRuleError):
 class LeaveTypesView(APIView):
     permission_classes = [MODULE, HasPermission("leave_elm.application.apply")]
 
-    @extend_schema(responses={200: dict})
+    @extend_schema(responses=LeaveTypeSerializer(many=True))
     def get(self, request):
         data = [{"code": category.value, "label": category.name}
                 for category in Category]

@@ -80,12 +80,27 @@ def yearly_charges(
     if half_day and (category != Category.CL or start != end
                      or half_day not in {"first", "second"}):
         raise LeaveRuleError("Only a one-date CL request can select a half day.")
-    for offset in range((end - start).days + 1):
-        day = start + timedelta(days=offset)
-        if category in CONTINUOUS_CATEGORIES or (
-            day.weekday() < 5 and day not in closed_dates
-        ):
-            charges[day.year] += Decimal("0.5" if half_day else "1")
+    day_charge = Decimal("0.5" if half_day else "1")
+    cursor = start
+    while True:
+        year_end = min(end, date(cursor.year, 12, 31))
+        duration = (year_end - cursor).days + 1
+        if category in CONTINUOUS_CATEGORIES:
+            charges[cursor.year] += day_charge * duration
+        else:
+            full_weeks, remainder = divmod(duration, 7)
+            weekdays = full_weeks * 5 + sum(
+                (cursor.weekday() + offset) % 7 < 5 for offset in range(remainder)
+            )
+            charges[cursor.year] += day_charge * weekdays
+        if year_end == end:
+            break
+        cursor = year_end + timedelta(days=1)
+    if category not in CONTINUOUS_CATEGORIES:
+        for day in closed_dates:
+            if start <= day <= end and day.weekday() < 5:
+                charges[day.year] -= day_charge
+    charges = {year: amount for year, amount in charges.items() if amount}
     if not charges:
         raise LeaveRuleError("The requested period contains no chargeable leave days.")
     return dict(charges)

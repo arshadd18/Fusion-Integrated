@@ -28,6 +28,30 @@ def test_counting_and_year_split_share_same_rules():
                            closed_dates=close) == sum(parts.values())
 
 
+def test_weekday_counting_is_year_split_and_excludes_closed_weekdays():
+    parts = yearly_charges(
+        Category.CL, date(2000, 1, 1), date(2003, 12, 31),
+        closed_dates={date(2000, 1, 3), date(2001, 1, 6)},
+    )
+    assert parts == {
+        2000: Decimal(259), 2001: Decimal(261),
+        2002: Decimal(261), 2003: Decimal(261),
+    }
+
+
+def test_continuous_leave_counts_every_day_across_years():
+    parts = yearly_charges(Category.EL, date(2023, 12, 31), date(2024, 1, 2))
+    assert parts == {2023: Decimal(1), 2024: Decimal(2)}
+
+
+def test_weekday_counting_supports_full_date_range():
+    parts = yearly_charges(Category.CL, date.min, date.max)
+    assert len(parts) == 9999
+    assert (parts[1], parts[9999], sum(parts.values())) == (
+        Decimal(261), Decimal(261), Decimal(2608615),
+    )
+
+
 def test_half_day_and_restricted_holiday_validation():
     assert chargeable_days(Category.CL, date(2026, 2, 2), date(2026, 2, 2),
                            half_day="first") == Decimal("0.5")

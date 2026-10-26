@@ -17,6 +17,11 @@ class LeaveBalanceSerializer(serializers.ModelSerializer):
         return obj.allotted - obj.reserved - obj.used
 
 
+class LeaveTypeSerializer(serializers.Serializer):
+    code = serializers.ChoiceField(choices=[category.value for category in Category])
+    label = serializers.CharField()
+
+
 class LeaveApplicationTransitionSerializer(serializers.ModelSerializer):
     class Meta:
         model = LeaveApplicationTransition

@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 
 import pytest
+from drf_spectacular.generators import SchemaGenerator
 from rest_framework.test import APIClient
 
 from conftest import make_session
@@ -52,3 +53,12 @@ def test_own_applications_api_hides_other_employees(stub_iam):
     rows = c.get("/api/v1/leave/applications").json()
     assert [row["id"] for row in rows] == [mine.id]
     assert other.id not in [row["id"] for row in rows]
+
+
+def test_leave_types_openapi_response_is_an_array():
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+    response = schema["paths"]["/api/v1/leave/types"]["get"]["responses"]["200"]
+    assert response["content"]["application/json"]["schema"]["type"] == "array"
+    assert response["content"]["application/json"]["schema"]["items"]["$ref"].endswith(
+        "/LeaveType"
+    )
